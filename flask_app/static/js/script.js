@@ -1,49 +1,63 @@
-const width = window.innerWidth
-const height = window.innerHeight
+// -- constants --
+// windowsize
+const window_width = window.innerWidth
+const window_height = window.innerHeight
+// text related
+const node_name_fontsize = "20px"
+// node settings
+const node_radius = 10
+// link settings
+const link_length = 100
+// force settings
+const link_force = 1.3
+const repel_force = -1000
+const center_force = 0.02
 
-const svg = d3.select("svg")
-    .attr("viewBox", `0 0 ${window.innerWidth} ${window.innerHeight}`)  // Adjust the viewBox
+// Define a color mapping based on node_type
+const colorScale = d3.scaleOrdinal()
+    .domain(["root", "local", "third_party"])
+    .range(["red", "green", "blue"]);
+
+const typeNodeRadius = d3.scaleOrdinal()
+    .domain(["root", "local", "third_party"])
+    .range([12, 10, 8]);
+
 
 function simulateGraph(nodes, links) {
     const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id).distance(100).strength(0.8))
-        .force("repel_each_other", d3.forceManyBody().strength(-1000))
-        .force("center", d3.forceCenter(width / 2, height / 2).strength(0.01));
+        .force("link", d3.forceLink(links).id(d => d.id).distance(link_length).strength(link_force))
+        .force("repel_each_other", d3.forceManyBody().strength(repel_force))
+        .force("center", d3.forceCenter(window_width / 2, window_height / 2).strength(center_force));
 
+    // Create Links with Arrowheads
     const link = svg.selectAll("line")
         .data(links)
         .enter().append("line")
         .attr("stroke", "#999")
-        .attr("stroke-width", 2);
+        .attr("stroke-width", 2)
+        .attr("marker-end", "url(#arrow)");
 
-    // Define a color mapping based on node_type
-    const colorScale = d3.scaleOrdinal()
-        .domain(["root", "local", "third_party"])
-        .range(["red", "green", "blue"]);
-
+    // Create nodes
     const node = svg.selectAll("circle")
         .data(nodes)
         .enter().append("circle")
-        .attr("r", 10)
+        .attr("r", d => typeNodeRadius(d.type))
         .attr("stroke", "black")
         .attr("stroke-width", 1)
         .attr("fill", d => colorScale(d.type))
         .call(drag(simulation));
 
-    // Add labels (text) for each node
+    // Create labels for the nodes with their name attribute
     const labels = svg.selectAll("text")
         .data(nodes)
         .enter().append("text")
         .text(d => d.name) // Display the 'name' attribute
-        .attr("text-anchor", "middle") // Center the text
-        .style("font-size", "12px")
-        .style("fill", "black");
-
-    // Unfix the nodes
-    nodes.forEach(d => {
-        d.fx = null;
-        d.fy = null;
-    });
+        .attr("text-anchor", "middle")
+        .style("font-size", node_name_fontsize)
+        .style("fill", "black")
+        .style("font-family", "Trebuchet MS")
+        .style("user-select", "none") // Remove any interaction with the text elements
+        .style("pointer-events", "none");
 
     // start simulation
     simulation.on("tick", () => {
@@ -53,7 +67,7 @@ function simulateGraph(nodes, links) {
             .attr("y2", d => d.target.y);
 
         node.attr("cx", d => d.x)
-            .attr("cy", d => d.y);
+            .attr("cy", d => d.y)
 
         labels.attr("x", d => d.x)
               .attr("y", d => d.y - 15);
@@ -64,7 +78,7 @@ function simulateGraph(nodes, links) {
 // Dragging functionality
 function drag(simulation) {
     function dragstarted(event, d) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+        if (!event.active) simulation.alphaTarget(0.5).restart();
         d.fx = d.x;
         d.fy = d.y;
     }
@@ -83,16 +97,36 @@ function drag(simulation) {
         .on("end", dragended);
 }
 
+// Adjust the viewBox. The 0.99 multiplier circumvents a scrollbar from appearing
+const svg = d3.select("svg")
+    .attr("viewBox", `0 0 ${window.innerWidth} ${window.innerHeight*0.99}`)
+
+// Add Arrowhead Marker Definition**
+svg.append("defs").append("marker")
+    .attr("id", "arrow")
+    .attr("viewBox", "0 -5 10 10") // Defines the arrow shape
+    .attr("refX", link_length/2 + node_radius)  // Position of arrow relative to node
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+    .append("path")
+    .attr("d", "M 0,-5 L 10,0 L 0,5") // Triangle shape
+    .attr("fill", "black");  // Arrow color
 
 // Render the graph when the page loads
 document.addEventListener("DOMContentLoaded", function() {
-    // Initially fix all nodes at the center
+    // Initially fix all nodes at the center for a smooth startup
     graphData.nodes.forEach(d => {
-        d.x = width / 2 + Math.random() * 100;
-        d.y = height / 2 + Math.random() * 100;
+        d.x = window_width / 2 + Math.random() * 100;
+        d.y = window_height / 2 + Math.random() * 100;
         d.fx = d.x;
         d.fy = d.y;
     });
-    // Call the simultion
+    // Unfix the nodes after initial fix around the center
+    graphData.nodes.forEach(d => {
+        d.fx = null;
+        d.fy = null;
+    });
+    // Call the simulation
     simulateGraph(graphData.nodes, graphData.links);
 });

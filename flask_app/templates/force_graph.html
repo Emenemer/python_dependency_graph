@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Data App</title>
+</head>
+<body>
+    <h1>Graph Data Application</h1>
+    <p>This is a sample page with JavaScript.</p>
+
+    <svg width="90%" height="90%"></svg> <!-- Ensure SVG is large enough to render the graph -->
+
+    <!-- Pass graph data from Flask to JS -->
+    <script>
+        const graphData = {{ graph_data | tojson }};
+    </script>
+
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <!-- Reference the external script.js file -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

@@ -9,7 +9,7 @@ const node_radius = 10
 // link settings
 const link_length = 100
 // force settings
-const link_force = 1.3
+const link_force = 0.8
 const repel_force = -1000
 const center_force = 0.02
 

@@ -1,0 +1,38 @@
+/* styling for the whole page, ensure no scrollbars */
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+svg {
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+/* Node label styles */
+.node-label {
+    font-size: 20px;
+    fill: black;
+    font-family: "Trebuchet MS";
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Styling for the reset button */
+.reset-zoom-button {
+    cursor: pointer;
+}
+.reset-zoom-button text {
+    font-family: Arial, sans-serif;
+    fill: black;
+    font-size: 16px
+}
+.reset-zoom-button rect {
+    fill: lightgray;
+    rx: 5;
+    ry: 5;
+}
+.reset-zoom-button:hover rect {
+    fill: darkgray;
+}

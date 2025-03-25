@@ -1,4 +1,5 @@
 from example_production.library.test_file import make_df
+from file_to_trace import testclass
 
 
 class TestClass:

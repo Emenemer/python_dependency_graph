@@ -1,18 +1,17 @@
 // windowsize
 const windowWidth = window.innerWidth
 const windowHeight = window.innerHeight
-// node settings
-const nodeRadius = 10
-// link settings
-const linkLength = 100
-// force settings
-const linkForce = 0.5
-const repelForce = -1500
-const centerForce = 0.02
-// Reset Zoom Button
-const buttonWidth = 100;
-const buttonHeight = 30;
 
+// Initial node settings
+const nodeRadius = 10
+
+// Initial link settings
+let linkLength = 100
+
+// Initial force settings
+let linkForce = 0.5
+let repelForce = -1500
+let centerForce = 0.02
 
 // Define a color mapping based on node_type
 const colorScale = d3.scaleOrdinal()
@@ -32,17 +31,6 @@ const svg = d3.select("svg")
 // Create a container group for the entire graph that can be zoomed/panned
 const graphContainer = svg.append("g");
 
-// Add zoom functionality
-const zoom = d3.zoom()
-    .scaleExtent([0.1, 10])  // Limit zoom levels
-    .on("zoom", (event) => {
-        // Apply zoom transformation to the graph container
-        graphContainer.attr("transform", event.transform);
-    });
-
-// Apply zoom to the entire SVG
-svg.call(zoom);
-
 // Add Arrowhead marker definition to svg
 svg.append("defs").append("marker")
     .attr("id", "arrow")
@@ -55,30 +43,30 @@ svg.append("defs").append("marker")
     .attr("d", "M 0,-5 L 10,0 L 0,5") // Triangle shape
     .attr("fill", "black");  // Arrow color
 
-// Add reset zoom button
-const buttonGroup = svg.append("g")
-    .attr("transform", `translate(${windowWidth - buttonWidth - 40}, 10)`)
-    .attr('class', 'reset-zoom-button')
-    .on("click", () => {
-        // Reset zoom to initial state
-        svg.transition()
-            .duration(500)
-            .call(zoom.transform, d3.zoomIdentity);
-    })
-buttonGroup.append("rect")
-    .attr("width", buttonWidth)
-    .attr("height", buttonHeight)
-buttonGroup.append("text")
-    .attr("x", buttonWidth / 2)  // Horizontal center
-    .attr("y", buttonHeight / 2)  // Vertical center
-    .attr("text-anchor", "middle")  // Horizontally center
-    .attr("dominant-baseline", "middle")  // Vertically center
-    .text("Reset zoom");
+// Add zoom functionality
+const zoom = d3.zoom()
+    .scaleExtent([0.1, 10])  // Limit zoom levels
+    .on("zoom", (event) => {
+        // Apply zoom transformation to the graph container
+        graphContainer.attr("transform", event.transform);
+    });
+
+// Apply zoom to the entire SVG
+svg.call(zoom);
+
+// Global simulation variable
+let simulation;
 
 // Simulate graph function
 function simulateGraph(nodes, links) {
-    // Create simulation
-    const simulation = d3.forceSimulation(nodes)
+    // Stop any existing simulation
+    if (simulation) simulation.stop();
+
+    // Clear existing graph elements
+    graphContainer.selectAll("*").remove();
+
+    // Restart the simulation with current parameters
+    simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links).id(d => d.id).distance(linkLength).strength(linkForce))
         .force("repel_each_other", d3.forceManyBody().strength(repelForce))
         .force("center", d3.forceCenter(windowWidth / 2, windowHeight / 2).strength(centerForce));
@@ -125,6 +113,7 @@ function simulateGraph(nodes, links) {
               .attr("y", d => d.y - 15);
     });
 
+    return simulation;
 }
 
 // Dragging functionality
@@ -149,9 +138,35 @@ function drag(simulation) {
         .on("end", dragended);
 }
 
-
 // Render the graph when the page loads
 document.addEventListener("DOMContentLoaded", function() {
+    // Set up slider event listeners
+    document.getElementById('linkForceSlider').addEventListener('input', function() {
+        linkForce = +this.value;
+        simulateGraph(graphData.nodes, graphData.links);
+    });
+
+    document.getElementById('repelForceSlider').addEventListener('input', function() {
+        repelForce = -this.value;
+        simulateGraph(graphData.nodes, graphData.links);
+    });
+
+    document.getElementById('centerForceSlider').addEventListener('input', function() {
+        centerForce = +this.value;
+        simulateGraph(graphData.nodes, graphData.links);
+    });
+
+    document.getElementById('linkLengthSlider').addEventListener('input', function() {
+        linkLength = +this.value;
+        simulateGraph(graphData.nodes, graphData.links);
+    });
+    // Add reset zoom button functionality
+    document.getElementById('resetZoomButton').addEventListener('click', function() {
+        // Reset zoom to initial state
+        svg.transition()
+            .duration(500)
+            .call(zoom.transform, d3.zoomIdentity);
+    });
     // Initially fix all nodes at the center for a smooth startup
     graphData.nodes.forEach(d => {
         d.x = windowWidth / 2 + Math.random() * 100;

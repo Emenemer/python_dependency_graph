@@ -1,15 +1,15 @@
-/* styling for the whole page, ensure no scrollbars */
 body, html {
     margin: 0;
     padding: 0;
-    overflow: hidden;
+}
+body {
+    position: relative
 }
 svg {
-    position: fixed;
-    top: 0;
-    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
 }
-
 /* Node label styles */
 .node-label {
     font-size: 20px;
@@ -18,21 +18,36 @@ svg {
     user-select: none;
     pointer-events: none;
 }
-
-/* Styling for the reset button */
-.reset-zoom-button {
+#resetZoomButton {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
     cursor: pointer;
-}
-.reset-zoom-button text {
-    font-family: Arial, sans-serif;
-    fill: black;
     font-size: 16px
 }
-.reset-zoom-button rect {
-    fill: lightgray;
-    rx: 5;
-    ry: 5;
+#controlPanel {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(255,255,255,0.8);
+    padding: 15px;
+    border-radius: 5px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    width: 250px;
 }
-.reset-zoom-button:hover rect {
-    fill: darkgray;
+.slider-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.slider-container label {
+    margin-right: 10px;
+    white-space: nowrap;
+}
+.slider-container input {
+    flex-grow: 1;
 }

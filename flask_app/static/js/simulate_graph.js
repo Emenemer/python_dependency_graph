@@ -130,7 +130,7 @@ function simulateGraph(nodes, links) {
 // Dragging functionality
 function drag(simulation) {
     function dragstarted(event, d) {
-        if (!event.active) simulation.alphaTarget(1.0).restart();
+        if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
         d.fy = d.y;
     }

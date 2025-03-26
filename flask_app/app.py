@@ -9,12 +9,14 @@ from trace_imports import build_import_graph
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--filepath", type=str)
-    parser.add_argument("--track_conditional_imports", action='store_true')
+    parser.add_argument("--include_conditional_imports", action='store_true')
+    parser.add_argument("--include_third_party", action='store_true')
     args = parser.parse_args()
     file_to_inspect = args.filepath
-    display_conditional = args.track_conditional_imports
+    display_conditional = args.include_conditional_imports
+    display_third_party = args.include_third_party
 
-    traced_imports = build_import_graph(file_to_inspect, display_conditional)
+    traced_imports = build_import_graph(file_to_inspect, display_conditional, display_third_party)
     graph_data = traced_imports.get_parent_child_dict()
     app = Flask(__name__)
 

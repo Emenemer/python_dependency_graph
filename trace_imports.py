@@ -98,7 +98,7 @@ def find_imports_in_file(file_path: str) -> list[ImportNode]:
     return imports
 
 
-def build_import_graph(input_path: str, track_conditionals: bool) -> ImportTracker:
+def build_import_graph(input_path: str, track_conditionals: bool, track_third_party: bool) -> ImportTracker:
     """
     Builds a directed graph (parent -> child) of imports.
     """
@@ -118,6 +118,8 @@ def build_import_graph(input_path: str, track_conditionals: bool) -> ImportTrack
             root_package = split_import[0]
             if not (working_dir / root_package).is_dir() and not (working_dir / (root_package + '.py')).is_file():
                 # this means it's a 3rd party import, stop after logging this import
+                if not track_third_party:
+                    continue
                 child_node = Node(name=root_package, file_path=root_package, type=NodeType.THIRD_PARTY)
                 graph_connections.add_connection(current_node, child_node)
                 continue

@@ -1,184 +1,249 @@
-// windowsize
-const windowWidth = window.innerWidth
-const windowHeight = window.innerHeight
-
-// Initial node settings
-const nodeRadius = 10
-
-// Initial link settings
-let linkLength = 100
-
-// Initial force settings
-let linkForce = 0.5
-let repelForce = -1500
-let centerForce = 0.02
-
-// Define a color mapping based on node_type
-const colorScale = d3.scaleOrdinal()
-    .domain(["root", "local", "third_party"])
-    .range(["red", "green", "blue"]);
-
-const typeNodeRadius = d3.scaleOrdinal()
-    .domain(["root", "local", "third_party"])
-    .range([12, 10, 8]);
-
-// Adjust the viewBox
-const svg = d3.select("svg")
-    .attr("viewBox", `0 0 ${window.innerWidth} ${window.innerHeight}`)
-    .attr("width", window.innerWidth)
-    .attr("height", window.innerHeight);
-
-// Create a container group for the entire graph that can be zoomed/panned
-const graphContainer = svg.append("g");
-
-// Add Arrowhead marker definition to svg
-svg.append("defs").append("marker")
-    .attr("id", "arrow")
-    .attr("viewBox", "0 -5 10 10") // Defines the arrow shape
-    .attr("refX", linkLength/2 + 2*nodeRadius)  // Position of arrow relative to node
-    .attr("markerWidth", 6)
-    .attr("markerHeight", 6)
-    .attr("orient", "auto")
-    .append("path")
-    .attr("d", "M 0,-5 L 10,0 L 0,5") // Triangle shape
-    .attr("fill", "black");  // Arrow color
-
-// Add zoom functionality
-const zoom = d3.zoom()
-    .scaleExtent([0.1, 10])  // Limit zoom levels
-    .on("zoom", (event) => {
-        // Apply zoom transformation to the graph container
-        graphContainer.attr("transform", event.transform);
-    });
-
-// Apply zoom to the entire SVG
-svg.call(zoom);
-
-// Global simulation variable
-let simulation;
-
-// Simulate graph function
-function simulateGraph(nodes, links) {
-    // Stop any existing simulation
-    if (simulation) simulation.stop();
-
-    // Clear existing graph elements
-    graphContainer.selectAll("*").remove();
-
-    // Restart the simulation with current parameters
-    simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id).distance(linkLength).strength(linkForce))
-        .force("repel_each_other", d3.forceManyBody().strength(repelForce))
-        .force("center", d3.forceCenter(windowWidth / 2, windowHeight / 2).strength(centerForce));
-
-    // Create links that have arrowheads
-    const link = graphContainer.selectAll("line")
-        .data(links)
-        .enter().append("line")
-        .attr("stroke", "#999")
-        .attr("stroke-width", 2)
-        .attr("marker-end", "url(#arrow)");
-
-    // Create nodes
-    const node = graphContainer.selectAll("circle")
-        .data(nodes)
-        .enter().append("circle")
-        .attr("r", d => typeNodeRadius(d.type))
-        .attr("stroke", "black")
-        .attr("stroke-width", 1)
-        .attr("fill", d => colorScale(d.type));
-
-    // Create labels for the nodes with their name attribute
-    const labels = graphContainer.selectAll("text")
-        .data(nodes)
-        .enter().append("text")
-        .text(d => d.name) // Display the 'name' attribute
-        .attr("text-anchor", "middle")
-        .attr("class", "node-label")
-
-    // Add drag functionality
-    graphContainer.selectAll("circle").call(drag(simulation))
-
-    // start simulation
-    simulation.on("tick", () => {
-        link.attr("x1", d => d.source.x)
-            .attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x)
-            .attr("y2", d => d.target.y);
-
-        node.attr("cx", d => d.x)
-            .attr("cy", d => d.y)
-
-        labels.attr("x", d => d.x)
-              .attr("y", d => d.y - 15);
-    });
-
-    return simulation;
-}
-
-// Dragging functionality
-function drag(simulation) {
-    function dragstarted(event, d) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
+// Configuration and constants
+const CONFIG = {
+    nodeTypes: {
+        types: ["root", "local", "third_party"],
+        colors: ["red", "green", "blue"],
+        radii: [12, 10, 8]
+    },
+    initialSettings: {
+        linkForce: 0.5,
+        repelForce: -1500,
+        centerForce: 0.02,
+        linkLength: 100
     }
-    function dragged(event, d) {
-        d.fx = event.x;
-        d.fy = event.y;
+};
+
+const nodeTypeColorScale = d3.scaleOrdinal()
+    .domain(CONFIG.nodeTypes.types)
+    .range(CONFIG.nodeTypes.colors);
+
+const nodeRadiusScale = d3.scaleOrdinal()
+    .domain(CONFIG.nodeTypes.types)
+    .range(CONFIG.nodeTypes.radii);
+
+class ForceGraph {
+    constructor(svgSelector) {
+        this.svg = d3.select(svgSelector);
+        this.windowWidth = window.innerWidth;
+        this.windowHeight = window.innerHeight;
+
+        this.initializeSVG();
+        this.setupZoom();
+        this.createArrowMarker();
+
+        this.graphContainer = this.svg.append("g");
     }
-    function dragended(event, d) {
-        if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
+
+    initializeSVG() {
+        this.svg
+            .attr("viewBox", `0 0 ${this.windowWidth} ${this.windowHeight}`)
+            .attr("width", this.windowWidth)
+            .attr("height", this.windowHeight);
     }
-    return d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
-}
 
-// Render the graph when the page loads
-document.addEventListener("DOMContentLoaded", function() {
-    // Set up slider event listeners
-    document.getElementById('linkForceSlider').addEventListener('input', function() {
-        linkForce = +this.value;
-        simulateGraph(graphData.nodes, graphData.links);
-    });
+    setupZoom() {
+        this.zoom = d3.zoom()
+            .scaleExtent([0.1, 10])
+            .on("zoom", (event) => {
+                this.graphContainer.attr("transform", event.transform);
+            });
 
-    document.getElementById('repelForceSlider').addEventListener('input', function() {
-        repelForce = -this.value;
-        simulateGraph(graphData.nodes, graphData.links);
-    });
+        this.svg.call(this.zoom);
+    }
 
-    document.getElementById('centerForceSlider').addEventListener('input', function() {
-        centerForce = +this.value;
-        simulateGraph(graphData.nodes, graphData.links);
-    });
+    createArrowMarker() {
+        this.svg.append("defs").append("marker")
+            .attr("id", "arrow")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", CONFIG.initialSettings.linkLength/2 + 20)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M 0,-5 L 10,0 L 0,5")
+            .attr("fill", "black");
+    }
 
-    document.getElementById('linkLengthSlider').addEventListener('input', function() {
-        linkLength = +this.value;
-        simulateGraph(graphData.nodes, graphData.links);
-    });
-    // Add reset zoom button functionality
-    document.getElementById('resetZoomButton').addEventListener('click', function() {
-        // Reset zoom to initial state
-        svg.transition()
+    set_initial_positions(graphData) {
+        const centerX = this.windowWidth / 2;
+        const centerY = this.windowHeight / 2;
+
+        graphData.nodes.forEach(node => {
+            node.x = centerX + (Math.random() - 0.5) * 200;
+            node.y = centerY + (Math.random() - 0.5) * 200;
+            node.fx = node.x;
+            node.fy = node.y;
+        });
+
+        // Defer unfixing to next event loop to ensure initial positioning
+        requestAnimationFrame(() => {
+            graphData.nodes.forEach(node => {
+                node.fx = null;
+                node.fy = null;
+            });
+        });
+    }
+
+    render(graphData) {
+        const links = graphData.links
+        const nodes = graphData.nodes
+
+        this.links = this.graphContainer.selectAll(".link")
+            .data(links)
+            .join("line")
+            .attr("class", "link")
+            .attr("stroke", "#999")
+            .attr("stroke-width", 2)
+            .attr("marker-end", "url(#arrow)");
+
+        this.nodes = this.graphContainer.selectAll(".node")
+            .data(nodes)
+            .join("circle")
+            .attr("class", "node")
+            .attr("r", d => nodeRadiusScale(d.type))
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .attr("fill", d => nodeTypeColorScale(d.type));
+
+        this.labels = this.graphContainer.selectAll(".node-label")
+            .data(nodes)
+            .join("text")
+            .attr("class", "node-label")
+            .text(d => d.name)
+            .attr("text-anchor", "middle");
+    }
+
+    startSimulation(graphData) {
+        const { linkLength, linkForce, repelForce, centerForce } = CONFIG.initialSettings;
+
+        // Stop any existing simulation
+        this.simulation?.stop();
+
+        // Create simulation
+        this.simulation = d3.forceSimulation(graphData.nodes)
+            .force("connectionLinks",
+                d3.forceLink(graphData.links)
+                    .id(d => d.id)
+                    .distance(linkLength)
+                    .strength(linkForce)
+            )
+            .force("nodeRepulsion",
+                d3.forceManyBody().strength(repelForce)
+            )
+            .force("graphCenter",
+                d3.forceCenter(
+                    this.windowWidth / 2,
+                    this.windowHeight / 2
+                ).strength(centerForce)
+            );
+
+        const updatePositions = () => {
+            this.links
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            this.nodes
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+
+            this.labels
+                .attr("x", d => d.x)
+                .attr("y", d => d.y - 15);
+        };
+
+        this.simulation.on("tick", updatePositions);
+        this.nodes.call(this.drag());
+    }
+
+    drag() {
+        const dragstarted = (event, d) => {
+            if (!event.active) this.simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        };
+
+        const dragged = (event, d) => {
+            d.fx = event.x;
+            d.fy = event.y;
+        };
+
+        const dragended = (event, d) => {
+            if (!event.active) this.simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        };
+
+        return d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended);
+    }
+
+    resetZoom() {
+        this.svg.transition()
             .duration(500)
-            .call(zoom.transform, d3.zoomIdentity);
-    });
-    // Initially fix all nodes at the center for a smooth startup
-    graphData.nodes.forEach(d => {
-        d.x = windowWidth / 2 + Math.random() * 100;
-        d.y = windowHeight / 2 + Math.random() * 100;
-        d.fx = d.x;
-        d.fy = d.y;
-    });
-    // Unfix the nodes after initial fix around the center
-    graphData.nodes.forEach(d => {
-        d.fx = null;
-        d.fy = null;
-    });
-    // Call the simulation
-    simulateGraph(graphData.nodes, graphData.links);
+            .call(this.zoom.transform, d3.zoomIdentity);
+    }
+}
+
+// Centralized event management
+class GraphEventManager {
+    constructor(graph, graphData) {
+        this.graph = graph;
+        this.graphData = graphData;
+        this.sliderMapping = {
+            'linkForceSlider': this.updateLinkForce.bind(this),
+            'repelForceSlider': this.updateRepelForce.bind(this),
+            'centerForceSlider': this.updateCenterForce.bind(this),
+            'linkLengthSlider': this.updateLinkLength.bind(this)
+        };
+    }
+
+    updateLinkForce(value) {
+        CONFIG.initialSettings.linkForce = +value;
+        this.graph.startSimulation(this.graphData);
+    }
+
+    updateRepelForce(value) {
+        CONFIG.initialSettings.repelForce = -value;
+        this.graph.startSimulation(this.graphData);
+    }
+
+    updateCenterForce(value) {
+        CONFIG.initialSettings.centerForce = +value;
+        this.graph.startSimulation(this.graphData);
+    }
+
+    updateLinkLength(value) {
+        CONFIG.initialSettings.linkLength = +value;
+        this.graph.svg.select("#arrow")
+            .attr("refX", CONFIG.initialSettings.linkLength/2 + 20);
+        this.graph.startSimulation(this.graphData);
+    }
+
+    attachEventListeners() {
+        Object.entries(this.sliderMapping).forEach(([sliderId, handler]) => {
+            const slider = document.getElementById(sliderId);
+            if (slider) {
+                slider.addEventListener('input', () => handler(slider.value));
+            }
+        });
+
+        const resetZoomButton = document.getElementById('resetZoomButton');
+        if (resetZoomButton) {
+            resetZoomButton.addEventListener('click', () => this.graph.resetZoom());
+        }
+    }
+}
+
+// Initialization
+document.addEventListener("DOMContentLoaded", function() {
+    const graph = new ForceGraph("svg");
+    graph.set_initial_positions(graphData);
+    graph.render(graphData);
+    graph.startSimulation(graphData);
+    const eventManager = new GraphEventManager(graph, graphData);
+    eventManager.attachEventListeners();
 });

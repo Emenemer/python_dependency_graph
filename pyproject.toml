@@ -1,0 +1,20 @@
+[project]
+name = "depmap"
+version = "0.1.0"
+description = "Creates a map of the dependencies of a file"
+authors = [
+    {name = "MichielNijmeijer",email = "michielenn@gmail.com"}
+]
+license = {text = "n"}
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy (>=2.2.4,<3.0.0)",
+    "flask (>=3.1.0,<4.0.0)",
+    "pathlib (>=1.0.1,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

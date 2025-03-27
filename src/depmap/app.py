@@ -3,7 +3,7 @@ import webbrowser
 
 from flask import Flask, render_template
 
-from trace_imports import build_import_graph
+from depmap.trace_imports import build_import_graph
 
 
 def main():

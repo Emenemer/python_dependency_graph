@@ -8,7 +8,7 @@ from depmap.trace_imports import build_import_graph
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--filepath", type=str)
+    parser.add_argument("filepath", type=str)
     parser.add_argument("--include_conditional_imports", action='store_true')
     parser.add_argument("--include_third_party", action='store_true')
     args = parser.parse_args()

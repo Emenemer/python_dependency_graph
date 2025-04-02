@@ -130,3 +130,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# local test files
+./example_production

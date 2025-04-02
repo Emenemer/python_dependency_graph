@@ -132,4 +132,4 @@ cython_debug/
 .pypirc
 
 # local test files
-./example_production
+example_production/

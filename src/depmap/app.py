@@ -1,45 +1,48 @@
 import argparse
-import logging
-import multiprocessing
-import sys
-import threading
-import time
+import os
+import re
 import webbrowser
-
-from flask import Flask, render_template
-from waitress import serve
+from pathlib import Path
 
 from depmap.trace_imports import build_import_graph
 
-
-def create_app(graph_data: dict) -> Flask:
-    app = Flask(__name__)
-    app.logger.setLevel("DEBUG")
-
-    # Root route to serve the HTML page
-    @app.route('/')
-    def home():
-        return render_template('force_graph.html', graph_data=graph_data)
-
-    return app
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
-def open_browser(url: str) -> None:
-    """Open browser after a delay to ensure server is up."""
-    def _open_browser():
-        time.sleep(0.5)
-        webbrowser.open(url)
+def create_html_with_jinja(graph_data) -> str:
+    def inline_file(filepath: Path):
+        with open(filepath, "r", encoding="utf-8") as f:
+            return f.read()
 
-    browser_thread = threading.Thread(target=_open_browser)
-    browser_thread.daemon = True
-    browser_thread.start()
+    root_path = Path(__file__).parent
+    css_content = inline_file(root_path / "static" / "css" / "styles.css")
+    js_content = inline_file(root_path / "static" / "js" / "simulate_graph.js")
+
+    # Set up Jinja environment manually
+    env = Environment(
+        loader=FileSystemLoader(root_path / "templates"),
+        autoescape=select_autoescape(["html", "xml"])
+    )
+
+    template = env.get_template("force_graph.html")
+    rendered = template.render(graph_data=graph_data)
+
+    # Inline the static files
+    rendered = re.sub(
+        r'<link rel="stylesheet" href=".*?styles\.css"\s*/?>',
+        f'<style>\n{css_content}\n</style>',
+        rendered
+    )
+    rendered = re.sub(
+        r'<script src=".*?simulate_graph\.js"\s*></script>',
+        f'<script>\n{js_content}\n</script>',
+        rendered
+    )
+
+    return rendered
 
 
 def main():
-    # silence waitress output
-    logger = logging.getLogger('waitress')
-    logger.setLevel(logging.ERROR)
-
     # parse args
     parser = argparse.ArgumentParser()
     parser.add_argument("filepath", type=str)
@@ -55,20 +58,16 @@ def main():
     )
     graph_data = traced_imports.get_parent_child_dict()
 
-    # create app and serve
-    app = create_app(graph_data)
+    rendered_html = create_html_with_jinja(graph_data)
 
-    host_address = '127.0.0.1'
-    port = 5000
-    full_address = f"http://{host_address}:{str(port)}"
-    open_browser(full_address)
+    # TODO: save to tempfile, delete after opening
+    # Save the rendered HTML to a file
+    output_path = r"C:\Users\Michiel Nijmeijer\Documents\temp\output.html"
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(rendered_html)
 
-    try:
-        serve(app, host=host_address, port=port)
-    except KeyboardInterrupt:
-        # Allow keyboard interrupts
-        print("\nShutting down server...")
-        sys.exit(0)
+    file_url = f"file://{os.path.abspath(output_path)}"
+    webbrowser.open(file_url)
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ from depmap.trace_imports import build_import_graph
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
-def create_html_with_jinja(graph_data) -> str:
+def create_html_with_jinja(graph_data: dict) -> str:
     def inline_file(filepath: Path):
         with open(filepath, "r", encoding="utf-8") as f:
             return f.read()
@@ -24,8 +24,7 @@ def create_html_with_jinja(graph_data) -> str:
         autoescape=select_autoescape(["html", "xml"])
     )
 
-    template = env.get_template("force_graph.html")
-    rendered = template.render(graph_data=graph_data)
+    rendered = env.get_template("force_graph.html").render(graph_data=graph_data)
 
     # Inline the static files
     rendered = re.sub(

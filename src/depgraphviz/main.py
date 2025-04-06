@@ -1,6 +1,8 @@
 import argparse
 import os
 import re
+import tempfile
+import time
 import webbrowser
 from pathlib import Path
 
@@ -59,11 +61,16 @@ def main():
 
     rendered_html = create_html_with_jinja(graph_data)
 
-    # TODO: save to tempfile, delete after opening
+    temp_dir = tempfile.gettempdir()
+    temp_file_path = Path(temp_dir) / 'dependency_graph.html'
     # Save the rendered HTML to a file
-    output_path = r"C:\Users\Michiel Nijmeijer\Documents\temp\output.html"
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(temp_file_path, "w", encoding="utf-8") as f:
         f.write(rendered_html)
 
-    file_url = f"file://{os.path.abspath(output_path)}"
+    file_url = f"file://{os.path.abspath(temp_file_path)}"
     webbrowser.open(file_url)
+
+    time.sleep(2)
+
+    # delete temp file
+    temp_file_path.unlink()

@@ -81,9 +81,12 @@ def categorize_nodes(node) -> list[ImportNode]:
 def find_imports_in_file(file_path: str) -> list[ImportNode]:
     imports: list[ImportNode] = []
 
-    # get the tree
-    with open(file_path, "r") as f:
-        tree = ast.parse(f.read(), filename=file_path)
+    try:
+        # get the tree
+        with open(file_path, "r", encoding='utf-8') as f:
+            tree = ast.parse(f.read())
+    except SyntaxError as e:
+        raise SyntaxError(f"Could not parse file at '{file_path}' due to a syntax error.") from e
 
     # loop through tree and set parent <-> child relationships for all nodes
     for node in ast.walk(tree):
@@ -97,7 +100,7 @@ def find_imports_in_file(file_path: str) -> list[ImportNode]:
     return imports
 
 
-def build_import_graph(input_path: str, track_conditionals: bool, track_third_party: bool) -> ImportTracker:
+def build_import_graph(input_path: str, track_conditionals: bool, track_third_party: bool, track_inits: bool) -> ImportTracker:
     """
     Builds a directed graph (parent -> child) of imports.
     """
@@ -137,15 +140,16 @@ def build_import_graph(input_path: str, track_conditionals: bool, track_third_pa
                     if possible_file not in graph_connections.checked_files:
                         get_imports_from_file(child_node)
                     continue
-                # else check for existence of __init__, and trace it
-                base_path = '/'.join(split_import[:i + 1])
-                possible_file = base_path + '/__init__.py'
-                if (working_dir / possible_file).is_file():
-                    node_type = NodeType.ROOT if graph_connections.is_root(possible_file) else NodeType.LOCAL
-                    child_node = Node(name=possible_file, file_path=possible_file, type=node_type)
-                    graph_connections.add_connection(current_node, child_node)
-                    if possible_file not in graph_connections.checked_files:
-                        get_imports_from_file(child_node)
+                if track_inits:
+                    # check for existence of __init__, and trace it
+                    base_path = '/'.join(split_import[:i + 1])
+                    possible_file = base_path + '/__init__.py'
+                    if (working_dir / possible_file).is_file():
+                        node_type = NodeType.ROOT if graph_connections.is_root(possible_file) else NodeType.LOCAL
+                        child_node = Node(name=possible_file, file_path=possible_file, type=node_type)
+                        graph_connections.add_connection(current_node, child_node)
+                        if possible_file not in graph_connections.checked_files:
+                            get_imports_from_file(child_node)
 
     graph_connections = ImportTracker()
     working_dir = Path.cwd()

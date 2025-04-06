@@ -49,13 +49,15 @@ def main():
     parser.add_argument("filepath", type=str)
     parser.add_argument("--include_conditional_imports", action='store_true')
     parser.add_argument("--include_third_party", action='store_true')
+    parser.add_argument("--include_inits", action='store_true')
     args = parser.parse_args()
 
     # trace imports
     traced_imports = build_import_graph(
         args.filepath,
         args.include_conditional_imports,
-        args.include_third_party
+        args.include_third_party,
+        args.include_inits
     )
     graph_data = traced_imports.get_parent_child_dict()
 

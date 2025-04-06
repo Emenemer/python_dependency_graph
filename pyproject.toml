@@ -1,7 +1,7 @@
 [project]
-name = "depmap"
+name = "depgraph"
 version = "0.1.0"
-description = "Creates a map of the dependencies of a file"
+description = "Creates a graph of the dependencies of a file"
 authors = [
     {name = "MichielNijmeijer",email = "michielenn@gmail.com"}
 ]
@@ -20,4 +20,4 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-depmap = "depmap.main:main"
+depgraph = "depgraph.main:main"

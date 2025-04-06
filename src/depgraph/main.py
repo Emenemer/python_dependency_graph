@@ -4,7 +4,7 @@ import re
 import webbrowser
 from pathlib import Path
 
-from depmap.trace_imports import build_import_graph
+from depgraph.trace_imports import build_import_graph
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 

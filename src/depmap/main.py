@@ -67,7 +67,3 @@ def main():
 
     file_url = f"file://{os.path.abspath(output_path)}"
     webbrowser.open(file_url)
-
-
-if __name__ == '__main__':
-    main()

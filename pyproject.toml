@@ -5,7 +5,8 @@ description = "Creates a map of the dependencies of a file"
 authors = [
     {name = "MichielNijmeijer",email = "michielenn@gmail.com"}
 ]
-license = {text = "n"}
+license = "MIT"
+license-files = ["LICENSE.txt"]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

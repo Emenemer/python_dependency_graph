@@ -1,6 +1,6 @@
 [project]
 name = "depgraphviz"
-version = "0.1.0"
+version = "0.1.1"
 description = "Creates a graph of the dependencies of a file"
 authors = [
     {name = "MichielNijmeijer",email = "michielenn@gmail.com"}

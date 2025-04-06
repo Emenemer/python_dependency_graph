@@ -1,5 +1,5 @@
 [project]
-name = "depgraph"
+name = "depgraphviz"
 version = "0.1.0"
 description = "Creates a graph of the dependencies of a file"
 authors = [
@@ -20,4 +20,4 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-depgraph = "depgraph.main:main"
+depgraph = "depgraphviz.main:main"

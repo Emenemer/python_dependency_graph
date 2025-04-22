@@ -39,6 +39,15 @@ svg {
     flex-direction: column;
     width: 250px;
 }
+#toggleGroupingButton{
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 16px
+}
 .slider-container {
     display: flex;
     align-items: center;
